@@ -2,31 +2,31 @@ package opentracing
 
 import "time"
 
-// Tracer is a simple, thin interface for Span creation and SpanContext
-// propagation.
+// Tracer 是一个简单，轻量的用于创建 Span 和传递 SpanContext 的接口。
 type Tracer interface {
 
-	// Create, start, and return a new Span with the given `operationName` and
-	// incorporate the given StartSpanOption `opts`. (Note that `opts` borrows
-	// from the "functional options" pattern, per
-	// http://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis)
+	// StartSpan 创建并开始一个新的 Span，并且拥有指定的 `operationName（操作名）` 和 `StartSpanOption（启动选项）`.
+	// （注意：参数`opt`使用了"函数选项"模式，可以通过这个链接查看该模式的详解）
+	// （http://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis）
 	//
-	// A Span with no SpanReference options (e.g., opentracing.ChildOf() or
-	// opentracing.FollowsFrom()) becomes the root of its own trace.
+	// 如果一个Span在没有任何关联Span(SpanReference)的情况下（例如没有调用`opentracing.ChildOf()`或者`opentracing.FollowsFrom()`）创建，
+	// 该Span将成为一个根Span（root span）
 	//
-	// Examples:
+	// 例子:
 	//
 	//     var tracer opentracing.Tracer = ...
 	//
-	//     // The root-span case:
+	//     // 根Span用例：
 	//     sp := tracer.StartSpan("GetFeed")
 	//
-	//     // The vanilla child span case:
+	//     (原文：The vanilla child span，经过咨询后get了vanilla还有nothing exciting的意思)
+	//     // 一个平凡无奇的 child Span 用例：
 	//     sp := tracer.StartSpan(
 	//         "GetFeed",
 	//         opentracing.ChildOf(parentSpan.Context()))
 	//
-	//     // All the bells and whistles:
+	//     （原文：All the bells and whistles）
+	//     // 点缀上更多的选项：
 	//     sp := tracer.StartSpan(
 	//         "GetFeed",
 	//         opentracing.ChildOf(parentSpan.Context()),
@@ -36,17 +36,14 @@ type Tracer interface {
 	//
 	StartSpan(operationName string, opts ...StartSpanOption) Span
 
-	// Inject() takes the `sm` SpanContext instance and injects it for
-	// propagation within `carrier`. The actual type of `carrier` depends on
-	// the value of `format`.
+	// Inject 将 SpanContext 注入到载体(carrier)中，载体的实际类型由格式(format)的值决定
 	//
-	// OpenTracing defines a common set of `format` values (see BuiltinFormat),
-	// and each has an expected carrier type.
+	// OpenTracing 定义了一组通用的`format`值（详见`BuildinFormat`），每个值都有一个预期的载体类型。
 	//
-	// Other packages may declare their own `format` values, much like the keys
-	// used by `context.Context` (see https://godoc.org/context#WithValue).
+	// 其他的包可能会定义它们自己的`format`值，就像是`context.Context`中的键一样，
+	// （详见 https://godoc.org/context#WithValue）
 	//
-	// Example usage (sans error handling):
+	// 例子（默认不处理错误）:
 	//
 	//     carrier := opentracing.HTTPHeadersCarrier(httpReq.Header)
 	//     err := tracer.Inject(
@@ -54,36 +51,30 @@ type Tracer interface {
 	//         opentracing.HTTPHeaders,
 	//         carrier)
 	//
-	// NOTE: All opentracing.Tracer implementations MUST support all
-	// BuiltinFormats.
+	// 注意：所有基于opentracing约定的Tracer实现都必须支持所有的`BuiltinFormats`
 	//
-	// Implementations may return opentracing.ErrUnsupportedFormat if `format`
-	// is not supported by (or not known by) the implementation.
+	// 基于不同的实现，该函数在传入不支持的`format`值或未知的`format`值时，
+	// 可能会返回错误 opentracing.ErrUnsupportedFormat
 	//
-	// Implementations may return opentracing.ErrInvalidCarrier or any other
-	// implementation-specific error if the format is supported but injection
-	// fails anyway.
+	// 在`fotmat`的值是支持的但是注入失败，或其他基于特定实现的问题下，
+	// 该函数可能会返回错误 opentracing.ErrInvalidCarrier
 	//
-	// See Tracer.Extract().
+	// 你可以再看看 Extract() (see Extract())
 	Inject(sm SpanContext, format interface{}, carrier interface{}) error
 
-	// Extract() returns a SpanContext instance given `format` and `carrier`.
+	// Extract 通过传入的格式(format)和载体(carrier)，来返回一个SpanContext
 	//
-	// OpenTracing defines a common set of `format` values (see BuiltinFormat),
-	// and each has an expected carrier type.
+	// OpenTracing 定义了一组通用的`format`值（详见`BuildinFormat`），每个值都有一个预期的载体类型。
 	//
-	// Other packages may declare their own `format` values, much like the keys
-	// used by `context.Context` (see
-	// https://godoc.org/golang.org/x/net/context#WithValue).
+	// 其他的包可能会定义它们自己的`format`值，就像是`context.Context`中的键一样，
+	// （详见 https://godoc.org/context#WithValue）
 	//
-	// Example usage (with StartSpan):
-	//
+	// 例子（带有StartSpan）：
 	//
 	//     carrier := opentracing.HTTPHeadersCarrier(httpReq.Header)
 	//     clientContext, err := tracer.Extract(opentracing.HTTPHeaders, carrier)
 	//
-	//     // ... assuming the ultimate goal here is to resume the trace with a
-	//     // server-side Span:
+	//     // ... 假设这里的目标是继续客户端的追踪并且创建一个服务端的Span：
 	//     var serverSpan opentracing.Span
 	//     if err == nil {
 	//         span = tracer.StartSpan(
@@ -92,34 +83,29 @@ type Tracer interface {
 	//         span = tracer.StartSpan(rpcMethodName)
 	//     }
 	//
+	// 注意：所有基于opentracing约定的Tracer实现都必须支持所有的`BuiltinFormats`
 	//
-	// NOTE: All opentracing.Tracer implementations MUST support all
-	// BuiltinFormats.
+	// 函数执行的返回值情况:
+	//  - 一次成功的 Extract 调用会返回一个 SpanContext和nil
+	//  - 如果在`carrier`中没有需要被提取的SpanContext，
+	//    那么该函数会返回 (nil, opentracing.ErrSpanContextNotFound)
+	//  - 如果`format`是不支持的或者无法识别，那么该函数会返回 (nil, opentracing.ErrUnsupportedFormat)
+	//  - 如果`carrier`对象有一些更基本的问题(more fundamental problems，我觉得翻译成"其他的问题"会更好一点)，
+	//    该函数可能会返回这些错误：opentracing.ErrInvalidCarrier, opentracing.ErrSpanContextCorrupted,
+	//    或者其他的基于实现的特有的错误
 	//
-	// Return values:
-	//  - A successful Extract returns a SpanContext instance and a nil error
-	//  - If there was simply no SpanContext to extract in `carrier`, Extract()
-	//    returns (nil, opentracing.ErrSpanContextNotFound)
-	//  - If `format` is unsupported or unrecognized, Extract() returns (nil,
-	//    opentracing.ErrUnsupportedFormat)
-	//  - If there are more fundamental problems with the `carrier` object,
-	//    Extract() may return opentracing.ErrInvalidCarrier,
-	//    opentracing.ErrSpanContextCorrupted, or implementation-specific
-	//    errors.
-	//
-	// See Tracer.Inject().
+	// 你可以再看看 Inject() (see Inject())
 	Extract(format interface{}, carrier interface{}) (SpanContext, error)
 }
 
-// StartSpanOptions allows Tracer.StartSpan() callers and implementors a
-// mechanism to override the start timestamp, specify Span References, and make
-// a single Tag or multiple Tags available at Span start time.
+// StartSpanOptions 允许 Tracer.StartSpan 通过在调用中传递本结构体来实现某种机制，
+// 比如覆盖Span开始时间的时间戳，指定一个Span的关联(Span References)，以及使一个或
+// 多个Tag在Span开始时可用
 //
-// StartSpan() callers should look at the StartSpanOption interface and
-// implementations available in this package.
+// StartSpan() 调用应该查看在这个包中的`StartSpanOption`的接口和实现
 //
-// Tracer implementations can convert a slice of `StartSpanOption` instances
-// into a `StartSpanOptions` struct like so:
+// Tracer 的实现能将一个`StartSpanOption`的切片转化为一个`StartSpanOptions`的结构体，
+// 就像下面这样：
 //
 //     func StartSpan(opName string, opts ...opentracing.StartSpanOption) {
 //         sso := opentracing.StartSpanOptions{}
@@ -130,65 +116,57 @@ type Tracer interface {
 //     }
 //
 type StartSpanOptions struct {
-	// Zero or more causal references to other Spans (via their SpanContext).
-	// If empty, start a "root" Span (i.e., start a new trace).
+	// Refenerces 存储了与其他Span相关联的SpanContext，长度可能为零。
+	// 如果为空，创建一个新的 root span。（即开启一条新链路）
 	References []SpanReference
 
-	// StartTime overrides the Span's start time, or implicitly becomes
-	// time.Now() if StartTime.IsZero().
+	// StartTime 存储了该Span的开始时间，如果 StartTime.IsZero()，则该值默认为 time.Now()
 	StartTime time.Time
 
-	// Tags may have zero or more entries; the restrictions on map values are
-	// identical to those for Span.SetTag(). May be nil.
+	// Tags 可能包含多个值；对该 map 的值的限制与 Span.SetTag() 相同。该字段可能会为nil
 	//
-	// If specified, the caller hands off ownership of Tags at
-	// StartSpan() invocation time.
+	// 在StartSpan调用之后请不要在其他地方使用该值
 	Tags map[string]interface{}
 }
 
-// StartSpanOption instances (zero or more) may be passed to Tracer.StartSpan.
+// StartSpanOption 接口的实例可能会传给 Tracer.StartSpan.
 //
-// StartSpanOption borrows from the "functional options" pattern, per
+// StartSpanOption 遵循了"函数选项(functional options)"模式，可以在这里了解该模式：
 // http://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
 type StartSpanOption interface {
 	Apply(*StartSpanOptions)
 }
 
-// SpanReferenceType is an enum type describing different categories of
-// relationships between two Spans. If Span-2 refers to Span-1, the
-// SpanReferenceType describes Span-1 from Span-2's perspective. For example,
-// ChildOfRef means that Span-1 created Span-2.
+// SpanReferenceType 是一个枚举类型，用于描述在两个有关联的Span中它们的关联类型。
+// 如果 Span-2 和 Span1 有关系，那么 SpanReferenceType 会在 Span-2的角度来描述自己和 Span-1 的关系。
+// 例如，ChildofRef 意味着 Span-1 创建了 Span-2，Span-1 是 Span-2 的上游。
 //
-// NOTE: Span-1 and Span-2 do *not* necessarily depend on each other for
-// completion; e.g., Span-2 may be part of a background job enqueued by Span-1,
-// or Span-2 may be sitting in a distributed queue behind Span-1.
+// 注意：Span-1 和 Span-2 **并不一定** 是互相有依赖的；即，Span-2 可能是 Span-1 的后台任务之一，
+// 或者 Span-2 可能是一个分布式队列中比 Span-1 稍后等待的任务。
 type SpanReferenceType int
 
 const (
-	// ChildOfRef refers to a parent Span that caused *and* somehow depends
-	// upon the new child Span. Often (but not always), the parent Span cannot
-	// finish until the child Span does.
+	// ChildOfRef 描述了父Span(parent Span)和依赖于它的子Span(child Span)的关系。
+	// 通常（但不是一定），在子Span完成前，父Span不能完成。
 	//
-	// An timing diagram for a ChildOfRef that's blocked on the new Span:
+	// 这个时序图描述了子Span阻塞了父Span的结束。
 	//
 	//     [-Parent Span---------]
 	//          [-Child Span----]
 	//
-	// See http://opentracing.io/spec/
+	// 详见 http://opentracing.io/spec/
 	//
-	// See opentracing.ChildOf()
+	// 你可以看看 opentracing.ChildOf()
 	ChildOfRef SpanReferenceType = iota
 
-	// FollowsFromRef refers to a parent Span that does not depend in any way
-	// on the result of the new child Span. For instance, one might use
-	// FollowsFromRefs to describe pipeline stages separated by queues,
-	// or a fire-and-forget cache insert at the tail end of a web request.
+	// FollowsFromRef 描述了一个父Span并不依赖于子Span执行结果的Span之间的关系。
+	// 一般通常用`FollowsFromRefs`来描述一个由队列分割的流水线阶段，
+	// 或一个在web请求的尾端插入的即发即忘缓存。
 	//
-	// A FollowsFromRef Span is part of the same logical trace as the new Span:
-	// i.e., the new Span is somehow caused by the work of its FollowsFromRef.
+	// 一个 FollowsFromRef Span 与新Span具有相同的逻辑，是同一个链路的一部分。
+	// 即，新的Span不知道是由何原因被旧的Span创建的。
 	//
-	// All of the following could be valid timing diagrams for children that
-	// "FollowFrom" a parent.
+	// 以下所有时序图都是FollowFromRef描述的关系的可能情况。
 	//
 	//     [-Parent Span-]  [-Child Span-]
 	//
@@ -200,39 +178,36 @@ const (
 	//     [-Parent Span-]
 	//                 [-Child Span-]
 	//
-	// See http://opentracing.io/spec/
+	// 详见 http://opentracing.io/spec/
 	//
-	// See opentracing.FollowsFrom()
+	// 你可以看看 opentracing.FollowsFrom()
 	FollowsFromRef
 )
 
-// SpanReference is a StartSpanOption that pairs a SpanReferenceType and a
-// referenced SpanContext. See the SpanReferenceType documentation for
-// supported relationships.  If SpanReference is created with
-// ReferencedContext==nil, it has no effect. Thus it allows for a more concise
-// syntax for starting spans:
+// SpanReference 是一个 StartSpanOption，包含了另一个 SpanContext 及该 Span 与另一个 Span 的关系。
+// 在 SpanReferenceType 的文档详见支持的关系类型。如果 SpanReference 的值为空，则该结构体不起作用。
+// 因此它允许使用一个更简单的方法来开始一个新的Span：
 //
 //     sc, _ := tracer.Extract(someFormat, someCarrier)
 //     span := tracer.StartSpan("operation", opentracing.ChildOf(sc))
 //
-// The `ChildOf(sc)` option above will not panic if sc == nil, it will just
-// not add the parent span reference to the options.
+// 如果sc为空(sc == nil)，选项`ChildOf(sc)`不会panic，并且不会将父Span添加到options中。
 type SpanReference struct {
 	Type              SpanReferenceType
 	ReferencedContext SpanContext
 }
 
-// Apply satisfies the StartSpanOption interface.
+// Apply 实现 StartSpanOption 接口
 func (r SpanReference) Apply(o *StartSpanOptions) {
 	if r.ReferencedContext != nil {
 		o.References = append(o.References, r)
 	}
 }
 
-// ChildOf returns a StartSpanOption pointing to a dependent parent span.
-// If sc == nil, the option has no effect.
+// ChildOf 返回一个指向依赖的父节点的SpanContext，已实现接口`StartSpanOption`。
+// 如果sc为空(sc == nil)，该选项不起作用。
 //
-// See ChildOfRef, SpanReference
+// 可以看看 ChildOfRef, SpanReference
 func ChildOf(sc SpanContext) SpanReference {
 	return SpanReference{
 		Type:              ChildOfRef,
@@ -240,11 +215,11 @@ func ChildOf(sc SpanContext) SpanReference {
 	}
 }
 
-// FollowsFrom returns a StartSpanOption pointing to a parent Span that caused
-// the child Span but does not directly depend on its result in any way.
-// If sc == nil, the option has no effect.
+// FollowsFrom 返回一个指向父节点的SpanContext，已实现接口`StartSpanOption`。
+// 父Span任何情况下都并不直接依赖于子Span的结果。
+// 如果sc为空(sc == nil)，该选项不起作用
 //
-// See FollowsFromRef, SpanReference
+// 可以看看 FollowsFromRef, SpanReference
 func FollowsFrom(sc SpanContext) SpanReference {
 	return SpanReference{
 		Type:              FollowsFromRef,
@@ -252,21 +227,19 @@ func FollowsFrom(sc SpanContext) SpanReference {
 	}
 }
 
-// StartTime is a StartSpanOption that sets an explicit start timestamp for the
-// new Span.
+// StartTime 实现了`StartSpanOption`接口，用于对Span设置一个明确的开始时间
 type StartTime time.Time
 
-// Apply satisfies the StartSpanOption interface.
+// Apply 实现`StartSpanOption`接口.
 func (t StartTime) Apply(o *StartSpanOptions) {
 	o.StartTime = time.Time(t)
 }
 
-// Tags are a generic map from an arbitrary string key to an opaque value type.
-// The underlying tracing system is responsible for interpreting and
-// serializing the values.
+// Tags 是一个通用的map，是string到不透明类型值(interface)的映射，
+// 底层的链路追踪系统负责解释和序列化该Tag
 type Tags map[string]interface{}
 
-// Apply satisfies the StartSpanOption interface.
+// Apply 实现`StartSpanOption`接口.
 func (t Tags) Apply(o *StartSpanOptions) {
 	if o.Tags == nil {
 		o.Tags = make(map[string]interface{})
@@ -276,13 +249,13 @@ func (t Tags) Apply(o *StartSpanOptions) {
 	}
 }
 
-// Tag may be passed as a StartSpanOption to add a tag to new spans,
-// or its Set method may be used to apply the tag to an existing Span,
-// for example:
+// Tag 可能会作为`StartSpanOption`来传递，为新的Span添加一个tag，
+// 或者它的`Set`方法可能用于在一个已有的Span上添加新的tag
+// 例如:
 //
 // tracer.StartSpan("opName", Tag{"Key", value})
 //
-//   or
+//   或者
 //
 // Tag{"key", value}.Set(span)
 type Tag struct {
@@ -290,7 +263,7 @@ type Tag struct {
 	Value interface{}
 }
 
-// Apply satisfies the StartSpanOption interface.
+// Apply 实现`StartSpanOption`接口.
 func (t Tag) Apply(o *StartSpanOptions) {
 	if o.Tags == nil {
 		o.Tags = make(map[string]interface{})
@@ -298,6 +271,7 @@ func (t Tag) Apply(o *StartSpanOptions) {
 	o.Tags[t.Key] = t.Value
 }
 
+// Set 会在一个已有的Span上添加新的tag
 // Set applies the tag to an existing Span.
 func (t Tag) Set(s Span) {
 	s.SetTag(t.Key, t.Value)
