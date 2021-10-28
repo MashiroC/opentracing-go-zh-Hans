@@ -272,7 +272,6 @@ func (t Tag) Apply(o *StartSpanOptions) {
 }
 
 // Set 会在一个已有的Span上添加新的tag
-// Set applies the tag to an existing Span.
 func (t Tag) Set(s Span) {
 	s.SetTag(t.Key, t.Value)
 }
