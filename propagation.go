@@ -6,81 +6,69 @@ import (
 )
 
 ///////////////////////////////////////////////////////////////////////////////
-// CORE PROPAGATION INTERFACES:
+// 核心传播接口(CORE PROPAGATION INTERFACES):
 ///////////////////////////////////////////////////////////////////////////////
 
 var (
-	// ErrUnsupportedFormat occurs when the `format` passed to Tracer.Inject() or
-	// Tracer.Extract() is not recognized by the Tracer implementation.
+	// ErrUnsupportedFormat 发生在调用 Tracer.Inject() 或 Tracer.Extrace() 时 `format` 字段该 Tracer 没有实现的情况下。
 	ErrUnsupportedFormat = errors.New("opentracing: Unknown or unsupported Inject/Extract format")
 
-	// ErrSpanContextNotFound occurs when the `carrier` passed to
-	// Tracer.Extract() is valid and uncorrupted but has insufficient
-	// information to extract a SpanContext.
+	// ErrSpanContextNotFound 发生在调用 Tracer.Extract() 时传输了有问题的 `carrier` 字段或该值内信息不足的情况下。
 	ErrSpanContextNotFound = errors.New("opentracing: SpanContext not found in Extract carrier")
 
-	// ErrInvalidSpanContext errors occur when Tracer.Inject() is asked to
-	// operate on a SpanContext which it is not prepared to handle (for
-	// example, since it was created by a different tracer implementation).
+	// ErrInvalidSpanContext 发生在当 SpanContext 没有准备好时就调用 Tracer.Inject() 的情况下。
+	// （例如，当它是另一个 Tracer 实现创建但由当前的 Tracer调用时）
 	ErrInvalidSpanContext = errors.New("opentracing: SpanContext type incompatible with tracer")
 
-	// ErrInvalidCarrier errors occur when Tracer.Inject() or Tracer.Extract()
-	// implementations expect a different type of `carrier` than they are
-	// given.
+	// ErrInvalidCarrier 发生在调用 Tracer.Inject() 或 Tracer.Extract() 时，Tracer 的实现期望获得的值与实际传输值不同的情况下。
 	ErrInvalidCarrier = errors.New("opentracing: Invalid Inject/Extract carrier")
 
-	// ErrSpanContextCorrupted occurs when the `carrier` passed to
-	// Tracer.Extract() is of the expected type but is corrupted.
+	// ErrSpanContextCorrupted 发生在调用 Tracer.Extract() 时，传入了非预期的 `carrier`。
 	ErrSpanContextCorrupted = errors.New("opentracing: SpanContext data corrupted in Extract carrier")
 )
 
 ///////////////////////////////////////////////////////////////////////////////
-// BUILTIN PROPAGATION FORMATS:
+// 内置传播格式(BUILTIN PROPAGATION FORMATS):
 ///////////////////////////////////////////////////////////////////////////////
 
-// BuiltinFormat is used to demarcate the values within package `opentracing`
-// that are intended for use with the Tracer.Inject() and Tracer.Extract()
-// methods.
+// BuiltinFormat 是一些内置的值，用于在 opentracing 包中调用 Tracer.Inject() 和 Tracer.Extract() 时指定序列化的格式
 type BuiltinFormat byte
 
 const (
-	// Binary represents SpanContexts as opaque binary data.
+	// Binary 代表 SpanContexts 的序列化格式是不透明的二进制数据
 	//
-	// For Tracer.Inject(): the carrier must be an `io.Writer`.
+	// 对于 Tracer.Inject()：载体(carrier)必须是`io.Writer`
 	//
-	// For Tracer.Extract(): the carrier must be an `io.Reader`.
+	// 对于 Tracer.Extract()：载体(carrier)必须是`io.Reader`
 	Binary BuiltinFormat = iota
 
-	// TextMap represents SpanContexts as key:value string pairs.
+	// TextMap 代表 SpanContexts 是一个值的类型为string的键值对。
 	//
-	// Unlike HTTPHeaders, the TextMap format does not restrict the key or
-	// value character sets in any way.
+	// 不像 HTTPHeaders，TextMap 的序列化格式不限制key和value的字符集。
 	//
-	// For Tracer.Inject(): the carrier must be a `TextMapWriter`.
+	// 对于 Tracer.Inject()：载体(carrier)必须是`TextMapWriter`
 	//
-	// For Tracer.Extract(): the carrier must be a `TextMapReader`.
+	// 对于 Tracer.Extract(): 载体(carrier)必须是`TextMapReader`
 	TextMap
 
-	// HTTPHeaders represents SpanContexts as HTTP header string pairs.
+	// HTTPHeaders 代表 SPanContext 是一个 HTTP header。
 	//
-	// Unlike TextMap, the HTTPHeaders format requires that the keys and values
-	// be valid as HTTP headers as-is (i.e., character casing may be unstable
-	// and special characters are disallowed in keys, values should be
-	// URL-escaped, etc).
+	// 不像  TextMap，HTTPHeaders 格式需要键和值都是有效的HTTP Header。
+	// （即：字符的大小写不稳定，键中不允许使用特殊字符，值应该是URL-escaped的，等）
 	//
-	// For Tracer.Inject(): the carrier must be a `TextMapWriter`.
+	// 对于 Tracer.Inject()：载体(carrier)必须是`TextMapWriter`
 	//
-	// For Tracer.Extract(): the carrier must be a `TextMapReader`.
+	// 对于 Tracer.Extract(): 载体(carrier)必须是`TextMapReader`
 	//
-	// See HTTPHeadersCarrier for an implementation of both TextMapWriter
-	// and TextMapReader that defers to an http.Header instance for storage.
-	// For example, Inject():
+	// 见 HTTPHeadersCarrier 以获取遵循 http.Header 实例进行存储的 TextMapWriter 和 TextMapReader 的实现。
+
+	// 例如，对于 Inject()：
 	//
 	//    carrier := opentracing.HTTPHeadersCarrier(httpReq.Header)
 	//    err := span.Tracer().Inject(
 	//        span.Context(), opentracing.HTTPHeaders, carrier)
 	//
-	// Or Extract():
+	// Extract():
 	//
 	//    carrier := opentracing.HTTPHeadersCarrier(httpReq.Header)
 	//    clientContext, err := tracer.Extract(
@@ -89,43 +77,31 @@ const (
 	HTTPHeaders
 )
 
-// TextMapWriter is the Inject() carrier for the TextMap builtin format. With
-// it, the caller can encode a SpanContext for propagation as entries in a map
-// of unicode strings.
+// TextMapWriter 是 Inject() 需要的载体 TextMap 的内置传播格式。调用者可以用它来编码一个 SpanContext 用于传播。编码类型是unicode字符串组成的map
 type TextMapWriter interface {
-	// Set a key:value pair to the carrier. Multiple calls to Set() for the
-	// same key leads to undefined behavior.
+	// Set 可以设置一个键值对到载体(carrier)。多个 Set() 调用但是使用相同的键是未定义行为。
 	//
-	// NOTE: The backing store for the TextMapWriter may contain data unrelated
-	// to SpanContext. As such, Inject() and Extract() implementations that
-	// call the TextMapWriter and TextMapReader interfaces must agree on a
-	// prefix or other convention to distinguish their own key:value pairs.
+	// 注意：TextMapWriter 在后端存储时可能包含与 SpanContext 无关的数据。
+	// 因此，调用 Inject() 和 Extract() 时， TextMapWriter 和 TextMapReader 接口的实现必须就前缀或其他约定达成一致，以区分它们自己的键值对。
 	Set(key, val string)
 }
 
-// TextMapReader is the Extract() carrier for the TextMap builtin format. With it,
-// the caller can decode a propagated SpanContext as entries in a map of
-// unicode strings.
+// TextMapReader 是 Extract() 需要的载体 TextMap 内置的传播格式。调用者可以用它来解码一个用于传播的 SpanContext。编码类型是unicode字符串组成的map
 type TextMapReader interface {
-	// ForeachKey returns TextMap contents via repeated calls to the `handler`
-	// function. If any call to `handler` returns a non-nil error, ForeachKey
-	// terminates and returns that error.
+	// ForeachKey 可以通过重复调用`handler`函数来访问 TextMap 的内容。
+	// 如果任何一次`handler`调用返回了一个非空(non-nil)的错误，ForeachKey 将会终止并且返回该错误。
 	//
-	// NOTE: The backing store for the TextMapReader may contain data unrelated
-	// to SpanContext. As such, Inject() and Extract() implementations that
-	// call the TextMapWriter and TextMapReader interfaces must agree on a
-	// prefix or other convention to distinguish their own key:value pairs.
+	// 注意：TextMapReader 在后端存储时可能包含与 SpanContext 无关的数据。
+	// 因此，调用 Inject() 和 Extract() 时， TextMapWriter 和 TextMapReader 接口的实现必须就前缀或其他约定达成一致，以区分它们自己的键值对。
 	//
-	// The "foreach" callback pattern reduces unnecessary copying in some cases
-	// and also allows implementations to hold locks while the map is read.
+	// "foreach" 回调模式在某些情况下减少了不必要的复制，并且允许在读取时保持锁。
 	ForeachKey(handler func(key, val string) error) error
 }
 
-// TextMapCarrier allows the use of regular map[string]string
-// as both TextMapWriter and TextMapReader.
+// TextMapCarrier 提供了对 TextMapWriter 和 TextMapReader 使用的常规的 map[string]string
 type TextMapCarrier map[string]string
 
-// ForeachKey conforms to the TextMapReader interface.
+// ForeachKey 实现 TextMapReader 接口。
 func (c TextMapCarrier) ForeachKey(handler func(key, val string) error) error {
 	for k, v := range c {
 		if err := handler(k, v); err != nil {
@@ -135,19 +111,19 @@ func (c TextMapCarrier) ForeachKey(handler func(key, val string) error) error {
 	return nil
 }
 
-// Set implements Set() of opentracing.TextMapWriter
+// Set 实现 TextMapWriter 接口。
 func (c TextMapCarrier) Set(key, val string) {
 	c[key] = val
 }
 
-// HTTPHeadersCarrier satisfies both TextMapWriter and TextMapReader.
+// HTTPHeadersCarrier 同时满足 TextMapWriter 和 TextMapReader 接口。
 //
-// Example usage for server side:
+// 服务端用例:
 //
 //     carrier := opentracing.HTTPHeadersCarrier(httpReq.Header)
 //     clientContext, err := tracer.Extract(opentracing.HTTPHeaders, carrier)
 //
-// Example usage for client side:
+// 客户端用例:
 //
 //     carrier := opentracing.HTTPHeadersCarrier(httpReq.Header)
 //     err := tracer.Inject(
@@ -157,13 +133,13 @@ func (c TextMapCarrier) Set(key, val string) {
 //
 type HTTPHeadersCarrier http.Header
 
-// Set conforms to the TextMapWriter interface.
+// Set 实现 TextMapWriter 接口。
 func (c HTTPHeadersCarrier) Set(key, val string) {
 	h := http.Header(c)
 	h.Set(key, val)
 }
 
-// ForeachKey conforms to the TextMapReader interface.
+// ForeachKey 实现 TextMapReader 接口。
 func (c HTTPHeadersCarrier) ForeachKey(handler func(key, val string) error) error {
 	for k, vals := range c {
 		for _, v := range vals {
