@@ -6,8 +6,8 @@ type contextKey struct{}
 
 var activeSpanKey = contextKey{}
 
-// ContextWithSpan returns a new `context.Context` that holds a reference to
-// the span. If span is nil, a new context without an active span is returned.
+// ContextWithSpan 返回一个新的`context.Context`，它包含对span的引用。
+// 如果span为空(nil)，将返回一个不包含活跃span的新context。
 func ContextWithSpan(ctx context.Context, span Span) context.Context {
 	if span != nil {
 		if tracerWithHook, ok := span.Tracer().(TracerContextWithSpanExtension); ok {
@@ -17,12 +17,10 @@ func ContextWithSpan(ctx context.Context, span Span) context.Context {
 	return context.WithValue(ctx, activeSpanKey, span)
 }
 
-// SpanFromContext returns the `Span` previously associated with `ctx`, or
-// `nil` if no such `Span` could be found.
+// SpanFromContext 返回`ctx`中之前的`Span`(即上一个函数写进去的span)，如果没有找到`span`会返回`nil`
 //
-// NOTE: context.Context != SpanContext: the former is Go's intra-process
-// context propagation mechanism, and the latter houses OpenTracing's per-Span
-// identity and baggage information.
+// 注意： context.Context != SpanContext: 前者是Go的进程内上下文传播机制，
+// 后者包含有OpenTracing的Span识别和携带信息。
 func SpanFromContext(ctx context.Context) Span {
 	val := ctx.Value(activeSpanKey)
 	if sp, ok := val.(Span); ok {
@@ -31,14 +29,13 @@ func SpanFromContext(ctx context.Context) Span {
 	return nil
 }
 
-// StartSpanFromContext starts and returns a Span with `operationName`, using
-// any Span found within `ctx` as a ChildOfRef. If no such parent could be
-// found, StartSpanFromContext creates a root (parentless) Span.
+// StartSpanFromContext 以`operationName`开始并返回一个Span，
+// 使用在`ctx`中找到的 Span 作为新Span的`ChildOfRef`(即新span的父节点是ctx中的那个span)。
+// 如果没有找到任何父级， StartSpanFromContext 将创建一个根(root)Span
 //
-// The second return value is a context.Context object built around the
-// returned Span.
+// 第二个返回值是一个 context.Context 对象，包含有返回的 Span
 //
-// Example usage:
+// 样例:
 //
 //    SomeFunction(ctx context.Context, ...) {
 //        sp, ctx := opentracing.StartSpanFromContext(ctx, "SomeFunction")
@@ -49,13 +46,12 @@ func StartSpanFromContext(ctx context.Context, operationName string, opts ...Sta
 	return StartSpanFromContextWithTracer(ctx, GlobalTracer(), operationName, opts...)
 }
 
-// StartSpanFromContextWithTracer starts and returns a span with `operationName`
-// using  a span found within the context as a ChildOfRef. If that doesn't exist
-// it creates a root span. It also returns a context.Context object built
-// around the returned span.
+// StartSpanFromContextWithTracer 以`operationName`开始并返回一个Span，
+// 使用在`ctx`中找到的 Span 作为新Span的`ChildOfRef`(即新span的父节点是ctx中的那个span)。
+// 如果没有找到任何父级， StartSpanFromContext 将创建一个根(root)Span
 //
-// It's behavior is identical to StartSpanFromContext except that it takes an explicit
-// tracer as opposed to using the global tracer.
+// 它的行为与 StartSpanFromContext 相比，除了显示的tracer之外，其他是完全相同的。
+// 对于 StartSpanFromContext, 它使用了 GlobalTracer。
 func StartSpanFromContextWithTracer(ctx context.Context, tracer Tracer, operationName string, opts ...StartSpanOption) (Span, context.Context) {
 	if parentSpan := SpanFromContext(ctx); parentSpan != nil {
 		opts = append(opts, ChildOf(parentSpan.Context()))
