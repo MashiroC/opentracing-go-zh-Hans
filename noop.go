@@ -2,19 +2,16 @@ package opentracing
 
 import "github.com/opentracing/opentracing-go/log"
 
-// A NoopTracer is a trivial, minimum overhead implementation of Tracer
-// for which all operations are no-ops.
+// NoopTracer 是一个微不足道的，最小开销的 Tracer 实现，该实现中所有方法都是空操作(no-ops)。
 //
-// The primary use of this implementation is in libraries, such as RPC
-// frameworks, that make tracing an optional feature controlled by the
-// end user. A no-op implementation allows said libraries to use it
-// as the default Tracer and to write instrumentation that does
-// not need to keep checking if the tracer instance is nil.
+// 该实现主要用于库，比如RPC框架，它使得链路追踪成为了一个用户可选的功能。
+// 一个空操作(no-op)的实现允许类库用它作为默认的 Tracer，不需要检查tracer的实例是否为空(nil)
+// （翻译注：就是指你可以把global tracer设置成这个，这样的话在代码里就不用每次调用tracer都检查有没有开启或者tracer是不是空了）
 //
-// For the same reason, the NoopTracer is the default "global" tracer
-// (see GlobalTracer and SetGlobalTracer functions).
+// 基于同样的原因，NoopTracer 是全局tracer的默认值。
+// （见 GlobalTracer 和 SetGlobalTracer）
 //
-// WARNING: NoopTracer does not support baggage propagation.
+// 警告(WARNING)： NoopTracer 没有支持携带数据(baggage)的传播
 type NoopTracer struct{}
 
 type noopSpan struct{}
@@ -48,17 +45,17 @@ func (n noopSpan) LogEvent(event string)                                 {}
 func (n noopSpan) LogEventWithPayload(event string, payload interface{}) {}
 func (n noopSpan) Log(data LogData)                                      {}
 
-// StartSpan belongs to the Tracer interface.
+// StartSpan 实现 Tracer 接口
 func (n NoopTracer) StartSpan(operationName string, opts ...StartSpanOption) Span {
 	return defaultNoopSpan
 }
 
-// Inject belongs to the Tracer interface.
+// Inject 实现 Tracer 接口
 func (n NoopTracer) Inject(sp SpanContext, format interface{}, carrier interface{}) error {
 	return nil
 }
 
-// Extract belongs to the Tracer interface.
+// Extract 实现 Tracer 接口
 func (n NoopTracer) Extract(format interface{}, carrier interface{}) (SpanContext, error) {
 	return nil, ErrSpanContextNotFound
 }

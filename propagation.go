@@ -61,7 +61,7 @@ const (
 	// 对于 Tracer.Extract(): 载体(carrier)必须是`TextMapReader`
 	//
 	// 见 HTTPHeadersCarrier 以获取遵循 http.Header 实例进行存储的 TextMapWriter 和 TextMapReader 的实现。
-
+    //
 	// 例如，对于 Inject()：
 	//
 	//    carrier := opentracing.HTTPHeadersCarrier(httpReq.Header)
