@@ -72,6 +72,7 @@ func TestContextWithSpanWithExtension(t *testing.T) {
 func TestStartSpanFromContext(t *testing.T) {
 	testTracer := testTracer{}
 
+	// 测试Context中是不是 *有* 一个Span
 	// Test the case where there *is* a Span in the Context.
 	{
 		parentSpan := &testSpan{}
@@ -85,7 +86,7 @@ func TestStartSpanFromContext(t *testing.T) {
 		}
 	}
 
-	// Test the case where there *is not* a Span in the Context.
+	// 测试Context中是不是 *没有* 一个Span
 	{
 		emptyCtx := context.Background()
 		childSpan, childCtx := StartSpanFromContextWithTracer(emptyCtx, testTracer, "child")
@@ -101,16 +102,16 @@ func TestStartSpanFromContext(t *testing.T) {
 func TestStartSpanFromContextOptions(t *testing.T) {
 	testTracer := testTracer{}
 
-	// Test options are passed to tracer
+	// 测试选项传递给tracer
 
-	startTime := time.Now().Add(-10 * time.Second) // ten seconds ago
+	startTime := time.Now().Add(-10 * time.Second) // 十秒前
 	span, ctx := StartSpanFromContextWithTracer(
 		context.Background(), testTracer, "parent", StartTime(startTime), Tag{"component", "test"})
 
 	assert.Equal(t, "test", span.(testSpan).Tags["component"])
 	assert.Equal(t, startTime, span.(testSpan).StartTime)
 
-	// Test it also works for a child span
+	// 测试它是否在child span中正常工作
 
 	childStartTime := startTime.Add(3 * time.Second)
 	childSpan, _ := StartSpanFromContextWithTracer(

@@ -10,8 +10,8 @@ import (
 
 const testHTTPHeaderPrefix = "testprefix-"
 
-// testTracer is a most-noop Tracer implementation that makes it possible for
-// unittests to verify whether certain methods were / were not called.
+// testTracer 是一个大多数操作是空操作的 Tracer 实现。
+// 它使得单元测试验证某些函数有没有被调用成为可能。
 type testTracer struct{}
 
 var fakeIDSource = 1
@@ -77,7 +77,7 @@ func (n testSpan) LogEvent(event string)                                 {}
 func (n testSpan) LogEventWithPayload(event string, payload interface{}) {}
 func (n testSpan) Log(data LogData)                                      {}
 
-// StartSpan belongs to the Tracer interface.
+// StartSpan 实现 Tracer 接口
 func (n testTracer) StartSpan(operationName string, opts ...StartSpanOption) Span {
 	sso := StartSpanOptions{}
 	for _, o := range opts {
@@ -103,7 +103,7 @@ func (n testTracer) startSpanWithOptions(name string, opts StartSpanOptions) Spa
 	}
 }
 
-// Inject belongs to the Tracer interface.
+// Inject 实现 Tracer 接口
 func (n testTracer) Inject(sp SpanContext, format interface{}, carrier interface{}) error {
 	spanContext := sp.(testSpanContext)
 	switch format {
@@ -114,12 +114,11 @@ func (n testTracer) Inject(sp SpanContext, format interface{}, carrier interface
 	return ErrUnsupportedFormat
 }
 
-// Extract belongs to the Tracer interface.
+// Extract 实现 Tracer 接口
 func (n testTracer) Extract(format interface{}, carrier interface{}) (SpanContext, error) {
 	switch format {
 	case HTTPHeaders, TextMap:
-		// Just for testing purposes... generally not a worthwhile thing to
-		// propagate.
+		// 目的仅仅是测试... 一般不值得真正去传播。
 		sm := testSpanContext{}
 		err := carrier.(TextMapReader).ForeachKey(func(key, val string) error {
 			switch strings.ToLower(key) {

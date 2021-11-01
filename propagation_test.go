@@ -22,8 +22,7 @@ func TestTextMapCarrierInject(t *testing.T) {
 	if len(m) != 3 {
 		t.Errorf("Unexpected header length: %v", len(m))
 	}
-	// The prefix comes from just above; the suffix comes from
-	// testTracer.Inject().
+	// 前缀来自于上面的操作，后缀来自于 testTracer.Inject().
 	if m["testprefix-fakeid"] != strconv.Itoa(fakeID) {
 		t.Errorf("Could not find fakeid at expected key")
 	}
@@ -55,7 +54,7 @@ func TestHTTPHeaderInject(t *testing.T) {
 	span := tracer.StartSpan("someSpan")
 	fakeID := span.Context().(testSpanContext).FakeID
 
-	// Use HTTPHeadersCarrier to wrap around `h`.
+	// 用 HTTPHeadersCarrier 来包装 `h`
 	carrier := HTTPHeadersCarrier(h)
 	if err := span.Tracer().Inject(span.Context(), HTTPHeaders, carrier); err != nil {
 		t.Fatal(err)
@@ -64,8 +63,8 @@ func TestHTTPHeaderInject(t *testing.T) {
 	if len(h) != 3 {
 		t.Errorf("Unexpected header length: %v", len(h))
 	}
-	// The prefix comes from just above; the suffix comes from
-	// testTracer.Inject().
+
+	// 前缀来自于上面的操作，后缀来自于 testTracer.Inject().
 	if h.Get("testprefix-fakeid") != strconv.Itoa(fakeID) {
 		t.Errorf("Could not find fakeid at expected key")
 	}
@@ -78,7 +77,7 @@ func TestHTTPHeaderExtract(t *testing.T) {
 	h.Add("testprefix-fakeid", "42")
 	tracer := testTracer{}
 
-	// Use HTTPHeadersCarrier to wrap around `h`.
+	// 用 HTTPHeadersCarrier 来包装 `h`
 	carrier := HTTPHeadersCarrier(h)
 	spanContext, err := tracer.Extract(HTTPHeaders, carrier)
 	if err != nil {
