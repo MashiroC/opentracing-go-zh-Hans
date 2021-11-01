@@ -4,21 +4,14 @@ import (
 	"context"
 )
 
-// TracerContextWithSpanExtension is an extension interface that the
-// implementation of the Tracer interface may want to implement. It
-// allows to have some control over the go context when the
-// ContextWithSpan is invoked.
+// TracerContextWithSpanExtension 是一个扩展接口，Tracer的实现可能要实现该接口。
+// 它允许Tracer在执行 ContextWithSpan 时控制go的context。
 //
-// The primary purpose of this extension are adapters from opentracing
-// API to some other tracing API.
+// 此扩展的主要目的是从 opentracing API 到其他一些跟踪 API 的适配器。
 type TracerContextWithSpanExtension interface {
-	// ContextWithSpanHook gets called by the ContextWithSpan
-	// function, when the Tracer implementation also implements
-	// this interface. It allows to put extra information into the
-	// context and make it available to the callers of the
-	// ContextWithSpan.
+	// ContextWithSpanHook 当 Tracer 实现了此接口时，可以被 ContextWithSpan 调用。
+	// 它允许调用者放置一些额外的信息在context中，并时 ContextWithSpan 函数对调用者可用。
 	//
-	// This hook is invoked before the ContextWithSpan function
-	// actually puts the span into the context.
+	// 该hook在 ContextWithSpan 函数会在span放在context前执行。
 	ContextWithSpanHook(ctx context.Context, span Span) context.Context
 }

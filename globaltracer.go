@@ -29,13 +29,11 @@ func StartSpan(operationName string, opts ...StartSpanOption) Span {
 }
 
 // InitGlobalTracer 已废弃(deprecated)，请使用 SetGlobalTracer。
-// InitGlobalTracer is deprecated. Please use SetGlobalTracer.
 func InitGlobalTracer(tracer Tracer) {
 	SetGlobalTracer(tracer)
 }
 
 // IsGlobalTracerRegistered 返回一个布尔值去判断tracer是否已经在全局注册
-// IsGlobalTracerRegistered returns a `bool` to indicate if a tracer has been globally registered
 func IsGlobalTracerRegistered() bool {
 	return globalTracer.isRegistered
 }
